@@ -2,48 +2,98 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Termelési Napló</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; padding: 10px; }
-        .row { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #333; }
-        .btn { background: #007aff; color: white; border: none; padding: 10px 20px; border-radius: 8px; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); padding: 20px; flex-direction: column; justify-content: center; }
+        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #007aff; --border: #333; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; user-select: none; }
+        .container { max-width: 600px; margin: auto; }
+        h2 { text-align: center; color: var(--accent); }
+        .cat-title { margin-top: 20px; font-size: 18px; border-bottom: 2px solid var(--accent); padding-bottom: 5px; }
+        
+        .row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .name { flex: 1; font-size: 14px; font-weight: bold; }
+        .controls { display: flex; gap: 5px; align-items: center; }
+        
+        .btn { background: var(--card); border: 1px solid var(--border); color: white; width: 40px; height: 40px; border-radius: 8px; font-size: 20px; cursor: pointer; }
+        .btn:active { background: var(--accent); }
+        .val-box { width: 45px; text-align: center; font-weight: bold; }
+        .label-txt { font-size: 10px; color: #888; display: block; }
     </style>
 </head>
 <body>
 
-<h2>Termelés: <span id="date-display"></span></h2>
-
-<!-- Pogácsa Kategória -->
-<h3>Pogácsák</h3>
-<div id="pogacsa-list"></div>
-
-<!-- Massza Kategória -->
-<h3>Masszák</h3>
-<div id="massza-list"></div>
-
-<!-- Egyéb Kategória -->
-<h3>Sütemények</h3>
-<div id="suti-list"></div>
-
-<!-- Modal a bevitelhez -->
-<div id="input-modal" class="modal">
-    <h3 id="modal-title"></h3>
-    <input type="number" id="val1" placeholder="Érték 1">
-    <input type="number" id="val2" placeholder="Érték 2">
-    <button onclick="saveData()">Mentés</button>
-    <button onclick="closeModal()">Mégse</button>
+<div class="container">
+    <h2>Termelési Napló</h2>
+    <div id="app"></div>
 </div>
 
 <script>
-    const termekek = {
+    const data = {
         pogacsak: ["Sajtos", "Burgonyás", "Tökmagos", "Juhturós", "Szarvasgombás", "Aszaltparadicsomos"],
-        masszak: ["Házcsoki", "Velence", "Belga"],
-        egyebek: ["Rétes", "Zserbó", "Szilvás papucs", "Sajtos roló"]
+        masszak: ["Házcsoki", "Velence", "Belga", "Zserbó", "Szilvás papucs", "Sajtos roló"],
+        egyebek: ["Rétes", "Pozsonyi kifli (dió)", "Pozsonyi kifli (mák)"]
     };
 
-    // Itt jön a logika, ami kirajzolja a listát és kezeli az adatbázist
-    // ...
+    let state = JSON.parse(localStorage.getItem('termeles_data')) || {};
+
+    function update(key, delta) {
+        state[key] = (state[key] || 0) + delta;
+        if(state[key] < 0) state[key] = 0;
+        localStorage.setItem('termeles_data', JSON.stringify(state));
+        render();
+    }
+
+    function render() {
+        const app = document.getElementById('app');
+        app.innerHTML = "";
+
+        // Pogácsák
+        app.innerHTML += '<div class="cat-title">Pogácsák</div>';
+        data.pogacsak.forEach(n => {
+            app.innerHTML += `
+            <div class="row">
+                <div class="name">${n}</div>
+                <div class="controls">
+                    <span class="label-txt">Lemez</span>
+                    <button class="btn" onclick="update('${n}_lemez', -1)">-</button>
+                    <div class="val-box">${state[n+'_lemez'] || 0}</div>
+                    <button class="btn" onclick="update('${n}_lemez', 1)">+</button>
+                    <span class="label-txt" style="margin-left:10px">Kg</span>
+                    <button class="btn" onclick="update('${n}_kg', -1)">-</button>
+                    <div class="val-box">${state[n+'_kg'] || 0}</div>
+                    <button class="btn" onclick="update('${n}_kg', 1)">+</button>
+                </div>
+            </div>`;
+        });
+
+        // Masszák (Igen/Nem)
+        app.innerHTML += '<div class="cat-title">Masszák & Egyebek</div>';
+        data.masszak.forEach(n => {
+            app.innerHTML += `
+            <div class="row">
+                <div class="name">${n}</div>
+                <button class="btn" style="width: 80px; ${state[n] ? 'background:green' : ''}" onclick="update('${n}', state['${n}'] ? -1 : 1)">
+                    ${state[n] ? 'KÉSZ' : 'NEM'}
+                </button>
+            </div>`;
+        });
+        
+        // Egyebek (Darabszám)
+        data.egyebek.forEach(n => {
+            app.innerHTML += `
+            <div class="row">
+                <div class="name">${n}</div>
+                <div class="controls">
+                    <button class="btn" onclick="update('${n}', -1)">-</button>
+                    <div class="val-box">${state[n] || 0}</div>
+                    <button class="btn" onclick="update('${n}', 1)">+</button>
+                </div>
+            </div>`;
+        });
+    }
+
+    render();
 </script>
 </body>
 </html>
