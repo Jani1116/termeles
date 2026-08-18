@@ -3,28 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Termelési Napló</title>
+    <title>Termelés</title>
     <style>
-        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #007aff; --border: #333; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; user-select: none; }
-        .container { max-width: 600px; margin: auto; }
-        h2 { text-align: center; color: var(--accent); }
-        .cat-title { margin-top: 20px; font-size: 18px; border-bottom: 2px solid var(--accent); padding-bottom: 5px; }
-        
-        .row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
-        .name { flex: 1; font-size: 14px; font-weight: bold; }
-        .controls { display: flex; gap: 5px; align-items: center; }
-        
-        .btn { background: var(--card); border: 1px solid var(--border); color: white; width: 40px; height: 40px; border-radius: 8px; font-size: 20px; cursor: pointer; }
-        .btn:active { background: var(--accent); }
-        .val-box { width: 45px; text-align: center; font-weight: bold; }
-        .label-txt { font-size: 10px; color: #888; display: block; }
+        :root { --bg: #000; --text: #fff; --accent: #007aff; --card: #1a1a1a; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 5px; font-size: 12px; }
+        .container { max-width: 500px; margin: auto; }
+        h2 { text-align: center; font-size: 16px; margin: 5px 0; color: var(--accent); }
+        .cat-title { font-size: 13px; font-weight: bold; background: #222; padding: 3px 8px; margin-top: 5px; }
+        .row { display: flex; align-items: center; padding: 2px 0; border-bottom: 1px solid #222; }
+        .name { flex: 1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .controls { display: flex; gap: 2px; align-items: center; }
+        .btn { background: #333; border: none; color: white; width: 28px; height: 28px; border-radius: 4px; font-size: 14px; cursor: pointer; }
+        .val-box { width: 30px; text-align: center; font-weight: bold; font-size: 13px; }
+        .label { font-size: 8px; color: #777; margin-right: 2px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Termelési Napló</h2>
+    <h2>Termelési Napló - 2026.08.17.</h2>
     <div id="app"></div>
 </div>
 
@@ -32,7 +29,7 @@
     const data = {
         pogacsak: ["Sajtos", "Burgonyás", "Tökmagos", "Juhturós", "Szarvasgombás", "Aszaltparadicsomos"],
         masszak: ["Házcsoki", "Velence", "Belga", "Zserbó", "Szilvás papucs", "Sajtos roló"],
-        egyebek: ["Rétes", "Pozsonyi kifli (dió)", "Pozsonyi kifli (mák)"]
+        egyebek: ["Rétes", "Pozsonyi (dió)", "Pozsonyi (mák)"]
     };
 
     let state = JSON.parse(localStorage.getItem('termeles_data')) || {};
@@ -48,18 +45,18 @@
         const app = document.getElementById('app');
         app.innerHTML = "";
 
-        // Pogácsák
+        // Pogácsák - Kompakt sorok
         app.innerHTML += '<div class="cat-title">Pogácsák</div>';
         data.pogacsak.forEach(n => {
             app.innerHTML += `
             <div class="row">
                 <div class="name">${n}</div>
                 <div class="controls">
-                    <span class="label-txt">Lemez</span>
+                    <span class="label">Lemez</span>
                     <button class="btn" onclick="update('${n}_lemez', -1)">-</button>
                     <div class="val-box">${state[n+'_lemez'] || 0}</div>
                     <button class="btn" onclick="update('${n}_lemez', 1)">+</button>
-                    <span class="label-txt" style="margin-left:10px">Kg</span>
+                    <span class="label" style="margin-left:5px">Kg</span>
                     <button class="btn" onclick="update('${n}_kg', -1)">-</button>
                     <div class="val-box">${state[n+'_kg'] || 0}</div>
                     <button class="btn" onclick="update('${n}_kg', 1)">+</button>
@@ -67,32 +64,25 @@
             </div>`;
         });
 
-        // Masszák (Igen/Nem)
-        app.innerHTML += '<div class="cat-title">Masszák & Egyebek</div>';
-        data.masszak.forEach(n => {
-            app.innerHTML += `
-            <div class="row">
-                <div class="name">${n}</div>
-                <button class="btn" style="width: 80px; ${state[n] ? 'background:green' : ''}" onclick="update('${n}', state['${n}'] ? -1 : 1)">
-                    ${state[n] ? 'KÉSZ' : 'NEM'}
-                </button>
-            </div>`;
-        });
-        
-        // Egyebek (Darabszám)
-        data.egyebek.forEach(n => {
+        // Masszák és Egyebek - Kompakt
+        app.innerHTML += '<div class="cat-title">Masszák & Süti</div>';
+        [...data.masszak, ...data.egyebek].forEach(n => {
+            const isMassza = data.masszak.includes(n);
             app.innerHTML += `
             <div class="row">
                 <div class="name">${n}</div>
                 <div class="controls">
-                    <button class="btn" onclick="update('${n}', -1)">-</button>
-                    <div class="val-box">${state[n] || 0}</div>
-                    <button class="btn" onclick="update('${n}', 1)">+</button>
+                    ${isMassza ? 
+                        `<button class="btn" style="width:60px; background:${state[n]?'green':'#333'}" onclick="update('${n}', state['${n}']?-1:1)">${state[n]?'KÉSZ':'NEM'}</button>` 
+                        : 
+                        `<button class="btn" onclick="update('${n}', -1)">-</button>
+                         <div class="val-box">${state[n] || 0}</div>
+                         <button class="btn" onclick="update('${n}', 1)">+</button>`
+                    }
                 </div>
             </div>`;
         });
     }
-
     render();
 </script>
 </body>
