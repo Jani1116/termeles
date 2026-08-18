@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Termelés</title>
+    <title>Termelési Napló</title>
     <style>
-        :root { --bg: #000; --text: #fff; --accent: #007aff; --card: #1a1a1a; }
+        :root { --bg: #000; --text: #fff; --accent: #007aff; }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 5px; font-size: 12px; }
         .container { max-width: 500px; margin: auto; }
         h2 { text-align: center; font-size: 16px; margin: 5px 0; color: var(--accent); }
-        .cat-title { font-size: 13px; font-weight: bold; background: #222; padding: 3px 8px; margin-top: 5px; }
-        .row { display: flex; align-items: center; padding: 2px 0; border-bottom: 1px solid #222; }
+        .cat-title { font-size: 12px; font-weight: bold; background: #222; padding: 3px 8px; margin-top: 6px; border-left: 4px solid var(--accent); }
+        .row { display: flex; align-items: center; padding: 2px 0; border-bottom: 1px solid #1a1a1a; }
         .name { flex: 1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .controls { display: flex; gap: 2px; align-items: center; }
-        .btn { background: #333; border: none; color: white; width: 28px; height: 28px; border-radius: 4px; font-size: 14px; cursor: pointer; }
+        .btn { background: #333; border: none; color: white; width: 28px; height: 26px; border-radius: 4px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .val-box { width: 30px; text-align: center; font-weight: bold; font-size: 13px; }
         .label { font-size: 8px; color: #777; margin-right: 2px; }
     </style>
@@ -21,7 +21,7 @@
 <body>
 
 <div class="container">
-    <h2>Termelési Napló - 2026.08.17.</h2>
+    <h2>Termelési Napló - <span id="date-display"></span></h2>
     <div id="app"></div>
 </div>
 
@@ -42,10 +42,15 @@
     }
 
     function render() {
+        // Dátum beállítása
+        const ma = new Date();
+        document.getElementById('date-display').innerText = 
+            `${ma.getFullYear()}.${String(ma.getMonth() + 1).padStart(2, '0')}.${String(ma.getDate()).padStart(2, '0')}.`;
+        
         const app = document.getElementById('app');
         app.innerHTML = "";
 
-        // Pogácsák - Kompakt sorok
+        // Pogácsák
         app.innerHTML += '<div class="cat-title">Pogácsák</div>';
         data.pogacsak.forEach(n => {
             app.innerHTML += `
@@ -64,8 +69,8 @@
             </div>`;
         });
 
-        // Masszák és Egyebek - Kompakt
-        app.innerHTML += '<div class="cat-title">Masszák & Süti</div>';
+        // Masszák & Egyebek
+        app.innerHTML += '<div class="cat-title">Masszák & Sütemények</div>';
         [...data.masszak, ...data.egyebek].forEach(n => {
             const isMassza = data.masszak.includes(n);
             app.innerHTML += `
