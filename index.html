@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Termelési Napló</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007aff">
     <style>
         :root { --bg: #000; --text: #fff; --accent: #007aff; }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 5px; font-size: 12px; }
@@ -26,6 +28,10 @@
 </div>
 
 <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+    }
+
     const data = {
         pogacsak: ["Sajtos", "Burgonyás", "Tökmagos", "Juhturós", "Szarvasgombás", "Aszaltparadicsomos"],
         masszak: ["Házcsoki", "Velence", "Belga", "Zserbó", "Szilvás papucs", "Sajtos roló"],
@@ -42,7 +48,6 @@
     }
 
     function render() {
-        // Dátum beállítása
         const ma = new Date();
         document.getElementById('date-display').innerText = 
             `${ma.getFullYear()}.${String(ma.getMonth() + 1).padStart(2, '0')}.${String(ma.getDate()).padStart(2, '0')}.`;
@@ -50,7 +55,6 @@
         const app = document.getElementById('app');
         app.innerHTML = "";
 
-        // Pogácsák
         app.innerHTML += '<div class="cat-title">Pogácsák</div>';
         data.pogacsak.forEach(n => {
             app.innerHTML += `
@@ -69,7 +73,6 @@
             </div>`;
         });
 
-        // Masszák & Egyebek
         app.innerHTML += '<div class="cat-title">Masszák & Sütemények</div>';
         [...data.masszak, ...data.egyebek].forEach(n => {
             const isMassza = data.masszak.includes(n);
