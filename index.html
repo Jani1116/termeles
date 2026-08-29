@@ -13,12 +13,11 @@
         h2 { text-align: center; font-size: 15px; margin: 5px 0; color: var(--accent); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .date-btn { background: #222; border: 1px solid #444; color: white; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
         .cat-title { font-size: 12px; font-weight: bold; background: #222; padding: 3px 8px; margin-top: 6px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
-        .row { display: flex; align-items: center; padding: 2px 0; border-bottom: 1px solid #1a1a1a; }
+        .row { display: flex; align-items: center; padding: 3px 0; border-bottom: 1px solid #1a1a1a; gap: 4px; }
         .name { flex: 1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .controls { display: flex; gap: 2px; align-items: center; }
-        .btn { background: #333; border: none; color: white; width: 28px; height: 26px; border-radius: 4px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .val-box { width: 30px; text-align: center; font-weight: bold; font-size: 13px; }
-        .label { font-size: 8px; color: #777; margin-left: 2px; }
+        .controls { display: flex; gap: 4px; align-items: center; }
+        .input-box { width: 45px; background: #111; border: 1px solid #444; color: white; text-align: center; padding: 3px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .label { font-size: 9px; color: #888; }
         .add-row { display: flex; gap: 4px; margin-top: 6px; padding: 4px; background: #111; border-radius: 4px; align-items: center; flex-wrap: wrap; }
         .add-row input { background: #222; border: 1px solid #444; color: white; padding: 4px; border-radius: 3px; font-size: 11px; }
         .add-row input[type="text"] { flex: 2; min-width: 120px; }
@@ -30,6 +29,7 @@
         .save-container { margin-top: 15px; text-align: center; }
         .save-btn { background: #28a745; color: white; border: none; width: 100%; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
         .status-msg { text-align: center; color: #28a745; font-size: 11px; margin-top: 4px; min-height: 14px; }
+        .del-btn { background: #552222; border: none; color: white; width: 22px; height: 22px; border-radius: 3px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -59,7 +59,7 @@
     };
 
     let currentDate = new Date();
-    let selectedUnit = 'kg'; // Alapértelmezett mértékegység az új tételnél
+    let selectedUnit = 'kg';
 
     function formatDateKey(date) {
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -82,18 +82,18 @@
         render();
     }
 
-    function update(itemKey, delta) {
+    function updateValue(itemKey, value) {
         let state = getActiveState();
-        state.items[itemKey] = (state.items[itemKey] || 0) + delta;
-        if(state.items[itemKey] < 0) state.items[itemKey] = 0;
-        render();
+        let val = parseFloat(value);
+        if (isNaN(val) || val < 0) val = 0;
+        state.items[itemKey] = val;
     }
 
-    function updateCustomVal(index, delta) {
+    function updateCustomVal(index, value) {
         let state = getActiveState();
-        state.customItems[index].val = (state.customItems[index].val || 0) + delta;
-        if(state.customItems[index].val < 0) state.customItems[index].val = 0;
-        render();
+        let val = parseFloat(value);
+        if (isNaN(val) || val < 0) val = 0;
+        state.customItems[index].val = val;
     }
 
     function setUnit(unit) {
@@ -145,18 +145,16 @@
         // Pogácsák
         app.innerHTML += '<div class="cat-title">Pogácsák</div>';
         defaultData.pogacsak.forEach(n => {
+            let lemezVal = state.items[n+'_lemez'] !== undefined ? state.items[n+'_lemez'] : '';
+            let kgVal = state.items[n+'_kg'] !== undefined ? state.items[n+'_kg'] : '';
             app.innerHTML += `
             <div class="row">
                 <div class="name">${n}</div>
                 <div class="controls">
-                    <button class="btn" onclick="update('${n}_lemez', -1)">-</button>
-                    <div class="val-box">${state.items[n+'_lemez'] || 0}</div>
-                    <button class="btn" onclick="update('${n}_lemez', 1)">+</button>
+                    <input type="number" class="input-box" value="${lemezVal}" oninput="updateValue('${n}_lemez', this.value)" placeholder="0">
                     <span class="label">Lemez</span>
                     
-                    <button class="btn" style="margin-left:6px;" onclick="update('${n}_kg', -1)">-</button>
-                    <div class="val-box">${state.items[n+'_kg'] || 0}</div>
-                    <button class="btn" onclick="update('${n}_kg', 1)">+</button>
+                    <input type="number" class="input-box" style="margin-left:6px;" value="${kgVal}" oninput="updateValue('${n}_kg', this.value)" placeholder="0">
                     <span class="label">dagasztás (kg)</span>
                 </div>
             </div>`;
@@ -166,23 +164,22 @@
         app.innerHTML += `
             <div class="cat-title">
                 <span>Masszák & Sütemények</span>
-                <button class="btn" style="width:20px; height:20px; font-size:12px;" onclick="toggleAddBox()">+</button>
+                <button class="btn" style="width:20px; height:20px; font-size:12px; background:#333; border:none; color:white; border-radius:4px; cursor:pointer;" onclick="toggleAddBox()">+</button>
             </div>
             <div id="add-box-container"></div>
         `;
 
         [...defaultData.masszak, ...defaultData.egyebek].forEach(n => {
             const isMassza = defaultData.masszak.includes(n);
+            let val = state.items[n] !== undefined ? state.items[n] : '';
             app.innerHTML += `
             <div class="row">
                 <div class="name">${n}</div>
                 <div class="controls">
                     ${isMassza ? 
-                        `<button class="btn" style="width:60px; background:${state.items[n]?'green':'#333'}" onclick="update('${n}', state.items['${n}']?-1:1)">${state.items[n]?'KÉSZ':'NEM'}</button>` 
+                        `<input type="number" class="input-box" style="width:60px;" value="${val}" oninput="updateValue('${n}', this.value)" placeholder="0">` 
                         : 
-                        `<button class="btn" onclick="update('${n}', -1)">-</button>
-                         <div class="val-box">${state.items[n] || 0}</div>
-                         <button class="btn" onclick="update('${n}', 1)">+</button>`
+                        `<input type="number" class="input-box" value="${val}" oninput="updateValue('${n}', this.value)" placeholder="0">`
                     }
                 </div>
             </div>`;
@@ -195,11 +192,9 @@
                 <div class="row">
                     <div class="name" style="color:#007aff;">${ci.name}</div>
                     <div class="controls">
-                        <button class="btn" onclick="updateCustomVal(${idx}, -1)">-</button>
-                        <div class="val-box">${ci.val}</div>
-                        <button class="btn" onclick="updateCustomVal(${idx}, 1)">+</button>
+                        <input type="number" class="input-box" value="${ci.val !== undefined ? ci.val : ''}" oninput="updateCustomVal(${idx}, this.value)" placeholder="0">
                         <span class="label">${ci.unit}</span>
-                        <button class="btn" style="background:#552222; margin-left:4px;" onclick="removeCustomItem(${idx})">×</button>
+                        <button class="del-btn" onclick="removeCustomItem(${idx})">×</button>
                     </div>
                 </div>`;
             });
@@ -214,7 +209,7 @@
             container.innerHTML = `
                 <div class="add-row">
                     <input type="text" id="custom-name" placeholder="Megnevezés">
-                    <input type="number" id="custom-val" placeholder="Menny." value="1">
+                    <input type="number" id="custom-val" placeholder="Menny." value="">
                     <div class="unit-select">
                         <button type="button" id="btn-kg" class="unit-btn ${selectedUnit==='kg'?'active':''}" onclick="setUnit('kg')">kg</button>
                         <button type="button" id="btn-db" class="unit-btn ${selectedUnit==='db'?'active':''}" onclick="setUnit('db')">db</button>
