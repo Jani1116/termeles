@@ -9,22 +9,39 @@
     <style>
         :root { --bg: #000; --text: #fff; --accent: #007aff; }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 5px; font-size: 12px; }
-        .container { max-width: 500px; margin: auto; }
-        h2 { text-align: center; font-size: 16px; margin: 5px 0; color: var(--accent); }
-        .cat-title { font-size: 12px; font-weight: bold; background: #222; padding: 3px 8px; margin-top: 6px; border-left: 4px solid var(--accent); }
+        .container { max-width: 500px; margin: auto; padding-bottom: 20px; }
+        h2 { text-align: center; font-size: 15px; margin: 5px 0; color: var(--accent); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .date-btn { background: #222; border: 1px solid #441; color: white; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .cat-title { font-size: 12px; font-weight: bold; background: #222; padding: 3px 8px; margin-top: 6px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
         .row { display: flex; align-items: center; padding: 2px 0; border-bottom: 1px solid #1a1a1a; }
         .name { flex: 1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .controls { display: flex; gap: 2px; align-items: center; }
         .btn { background: #333; border: none; color: white; width: 28px; height: 26px; border-radius: 4px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .val-box { width: 30px; text-align: center; font-weight: bold; font-size: 13px; }
         .label { font-size: 8px; color: #777; margin-right: 2px; }
+        .add-row { display: flex; gap: 4px; margin-top: 6px; padding: 4px; background: #111; border-radius: 4px; align-items: center; }
+        .add-row input { background: #222; border: 1px solid #444; color: white; padding: 4px; border-radius: 3px; font-size: 11px; }
+        .add-row input[type="text"] { flex: 2; }
+        .add-row input[type="number"] { width: 50px; text-align: center; }
+        .add-btn { background: #007aff; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-weight: bold; }
+        .save-container { margin-top: 15px; text-align: center; }
+        .save-btn { background: #28a745; color: white; border: none; width: 100%; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .status-msg { text-align: center; color: #28a745; font-size: 11px; margin-top: 4px; min-height: 14px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Termelési Napló - <span id="date-display"></span></h2>
+    <h2>
+        <button class="date-btn" onclick="changeDate(-1)">◀</button>
+        <span id="date-display"></span>
+        <button class="date-btn" onclick="changeDate(1)">▶</button>
+    </h2>
     <div id="app"></div>
+    <div class="save-container">
+        <button class="save-btn" onclick="saveData()">Mentés</button>
+        <div id="status-msg" class="status-msg"></div>
+    </div>
 </div>
 
 <script>
@@ -32,65 +49,164 @@
         navigator.serviceWorker.register('sw.js');
     }
 
-    const data = {
+    const defaultData = {
         pogacsak: ["Sajtos", "Burgonyás", "Tökmagos", "Juhturós", "Szarvasgombás", "Aszaltparadicsomos"],
         masszak: ["Házcsoki", "Velence", "Belga", "Zserbó", "Szilvás papucs", "Sajtos roló"],
         egyebek: ["Rétes", "Pozsonyi (dió)", "Pozsonyi (mák)"]
     };
 
-    let state = JSON.parse(localStorage.getItem('termeles_data')) || {};
+    let currentDate = new Date();
 
-    function update(key, delta) {
-        state[key] = (state[key] || 0) + delta;
-        if(state[key] < 0) state[key] = 0;
-        localStorage.setItem('termeles_data', JSON.stringify(state));
+    function formatDateKey(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    let allData = JSON.parse(localStorage.getItem('termeles_all_data')) || {};
+
+    function getActiveState() {
+        let key = formatDateKey(currentDate);
+        if (!allData[key]) {
+            allData[key] = { items: {}, customItems: [] };
+        }
+        if (!allData[key].items) allData[key].items = {};
+        if (!allData[key].customItems) allData[key].customItems = [];
+        return allData[key];
+    }
+
+    function changeDate(days) {
+        currentDate.setDate(currentDate.getDate() + days);
         render();
     }
 
-    function render() {
-        const ma = new Date();
-        document.getElementById('date-display').innerText = 
-            `${ma.getFullYear()}.${String(ma.getMonth() + 1).padStart(2, '0')}.${String(ma.getDate()).padStart(2, '0')}.`;
+    function update(itemKey, delta) {
+        let state = getActiveState();
+        state.items[itemKey] = (state.items[itemKey] || 0) + delta;
+        if(state.items[itemKey] < 0) state.items[itemKey] = 0;
+        render();
+    }
+
+    function updateCustomVal(index, delta) {
+        let state = getActiveState();
+        state.customItems[index].val = (state.customItems[index].val || 0) + delta;
+        if(state.customItems[index].val < 0) state.customItems[index].val = 0;
+        render();
+    }
+
+    function addCustomItem() {
+        const nameInput = document.getElementById('custom-name');
+        const valInput = document.getElementById('custom-val');
+        const name = nameInput.value.trim();
+        const val = parseFloat(valInput.value) || 0;
+
+        if (!name) return;
+
+        let state = getActiveState();
+        state.customItems.push({ name: name, val: val });
         
+        nameInput.value = '';
+        valInput.value = '';
+        render();
+    }
+
+    function removeCustomItem(index) {
+        let state = getActiveState();
+        state.customItems.splice(index, 1);
+        render();
+    }
+
+    function saveData() {
+        localStorage.setItem('termeles_all_data', JSON.stringify(allData));
+        const msg = document.getElementById('status-msg');
+        msg.innerText = "Sikeresen mentve!";
+        setTimeout(() => { msg.innerText = ""; }, 2000);
+    }
+
+    function render() {
+        document.getElementById('date-display').innerText = formatDateKey(currentDate).replaceAll('-', '.');
+        
+        let state = getActiveState();
         const app = document.getElementById('app');
         app.innerHTML = "";
 
+        // Pogácsák
         app.innerHTML += '<div class="cat-title">Pogácsák</div>';
-        data.pogacsak.forEach(n => {
+        defaultData.pogacsak.forEach(n => {
             app.innerHTML += `
             <div class="row">
                 <div class="name">${n}</div>
                 <div class="controls">
                     <span class="label">Lemez</span>
                     <button class="btn" onclick="update('${n}_lemez', -1)">-</button>
-                    <div class="val-box">${state[n+'_lemez'] || 0}</div>
+                    <div class="val-box">${state.items[n+'_lemez'] || 0}</div>
                     <button class="btn" onclick="update('${n}_lemez', 1)">+</button>
-                    <span class="label" style="margin-left:5px">Kg</span>
+                    <span class="label" style="margin-left:5px">Dagasztás (kg)</span>
                     <button class="btn" onclick="update('${n}_kg', -1)">-</button>
-                    <div class="val-box">${state[n+'_kg'] || 0}</div>
+                    <div class="val-box">${state.items[n+'_kg'] || 0}</div>
                     <button class="btn" onclick="update('${n}_kg', 1)">+</button>
                 </div>
             </div>`;
         });
 
-        app.innerHTML += '<div class="cat-title">Masszák & Sütemények</div>';
-        [...data.masszak, ...data.egyebek].forEach(n => {
-            const isMassza = data.masszak.includes(n);
+        // Masszák & Sütemények
+        app.innerHTML += `
+            <div class="cat-title">
+                <span>Masszák & Sütemények</span>
+                <button class="btn" style="width:20px; height:20px; font-size:12px;" onclick="toggleAddBox()">+</button>
+            </div>
+            <div id="add-box-container"></div>
+        `;
+
+        [...defaultData.masszak, ...defaultData.egyebek].forEach(n => {
+            const isMassza = defaultData.masszak.includes(n);
             app.innerHTML += `
             <div class="row">
                 <div class="name">${n}</div>
                 <div class="controls">
                     ${isMassza ? 
-                        `<button class="btn" style="width:60px; background:${state[n]?'green':'#333'}" onclick="update('${n}', state['${n}']?-1:1)">${state[n]?'KÉSZ':'NEM'}</button>` 
+                        `<button class="btn" style="width:60px; background:${state.items[n]?'green':'#333'}" onclick="update('${n}', state.items['${n}']?-1:1)">${state.items[n]?'KÉSZ':'NEM'}</button>` 
                         : 
                         `<button class="btn" onclick="update('${n}', -1)">-</button>
-                         <div class="val-box">${state[n] || 0}</div>
+                         <div class="val-box">${state.items[n] || 0}</div>
                          <button class="btn" onclick="update('${n}', 1)">+</button>`
                     }
                 </div>
             </div>`;
         });
+
+        // Egyedi hozzáadott elemek renderelése
+        if (state.customItems && state.customItems.length > 0) {
+            state.customItems.forEach((ci, idx) => {
+                app.innerHTML += `
+                <div class="row">
+                    <div class="name" style="color:#007aff;">${ci.name}</div>
+                    <div class="controls">
+                        <button class="btn" onclick="updateCustomVal(${idx}, -1)">-</button>
+                        <div class="val-box">${ci.val}</div>
+                        <button class="btn" onclick="updateCustomVal(${idx}, 1)">+</button>
+                        <button class="btn" style="background:#552222; margin-left:4px;" onclick="removeCustomItem(${idx})">×</button>
+                    </div>
+                </div>`;
+            });
+        }
     }
+
+    let isAddOpen = false;
+    function toggleAddBox() {
+        isAddOpen = !isAddOpen;
+        const container = document.getElementById('add-box-container');
+        if (isAddOpen) {
+            container.innerHTML = `
+                <div class="add-row">
+                    <input type="text" id="custom-name" placeholder="Megnevezés">
+                    <input type="number" id="custom-val" placeholder="Menny." value="1">
+                    <button class="add-btn" onclick="addCustomItem()">Hozzáad</button>
+                </div>
+            `;
+        } else {
+            container.innerHTML = "";
+        }
+    }
+
     render();
 </script>
 </body>
