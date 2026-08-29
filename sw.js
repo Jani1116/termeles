@@ -1,4 +1,4 @@
-const CACHE_NAME = 'termeles-v2';
+const CACHE_NAME = 'termeles-v3';
 const ASSETS = [
   './index.html',
   './manifest.json',
