@@ -1,1 +1,15 @@
-
+{
+  "name": "Termelési Napló",
+  "short_name": "Termelés",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#007aff",
+  "icons": [
+    {
+      "src": "kep.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}
