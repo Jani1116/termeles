@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'termeles-v1';
+const CACHE_NAME = 'termeles-v2';
 const ASSETS = [
   './index.html',
   './manifest.json',
